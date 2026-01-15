@@ -1,30 +1,64 @@
-# Supabase chat app
+네, 요청하신 내용을 바탕으로 **'미팅 매니저 춘식' 서비스 기획안의 README.md 파일 내용**을 코드 블록 형태로 정리해 드립니다. 아래 내용을 복사하여 `.md` 파일로 저장하시면 됩니다.
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+```markdown
+# 🐱 톡방 안의 미팅 매니저, 춘식 (Choonsik)
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/one-kakao-onboarding/v0-supabase-chat-app-ko)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/bUdaOzJTrpx)
+> **"끊김 없는 약속의 기술."**
+> 카카오톡 채팅방 밖으로 나갈 필요 없이, **In-Chat 환경에서 한 번에 약속 장소를 확정**하는 스마트 미팅 매니저 서비스입니다.
 
-## Overview
+---
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## 📌 Project Overview
+기존의 약속 장소 선정 방식은 여러 명의 출발지를 고려한 복잡한 계산, 맛집 검색을 위한 잦은 앱 이탈, 그리고 지리적 중간 지점이 정작 모임의 목적을 충족하지 못하는 '심리적 거리'의 문제를 안고 있습니다.  
+**춘식**은 단순한 물리적 거리를 넘어, 이동 효율성(Time), 대화의 맥락(Context), 장소의 화제성(Popularity)을 결합하여 **모두가 만족하는 '심리적 합의점'**을 도출합니다.
 
-## Deployment
+---
 
-Your project is live at:
+## ✨ Key Features (심리적 합의점의 3요소)
 
-**[https://vercel.com/one-kakao-onboarding/v0-supabase-chat-app-ko](https://vercel.com/one-kakao-onboarding/v0-supabase-chat-app-ko)**
+### 1. ⏱️ Time (이동 효율성)
+*   **Door-to-Door 연산**: 각 참여자의 거주지/출발 정보를 바탕으로 대중교통 실제 소요 시간을 실시간으로 계산합니다.
+*   **편차 최소화**: 특정 인원에게 이동 부담이 쏠리지 않도록 소요 시간의 표준 편차(Standard Deviation)를 최소화하는 지역을 우선순위로 선정합니다.
 
-## Build your app
+### 2. 💬 Context (맥락 분석)
+*   **채팅 로그 파싱**: 유저 동의 하에 대화 내용을 분석하여 모임의 성격(종강 파티, 카공, 회식 등)을 파악합니다.
+*   **맞춤형 태그 매핑**: `#대화하기 좋은`, `#특별한 메뉴` 등 추출된 키워드와 지도 앱의 장소 태그를 매칭합니다.
 
-Continue building your app on:
+### 3. 🔥 Popularity (화제성)
+*   **데이터 기반 검증**: 카카오맵 내의 최근 1개월 리뷰 증감률, 별점 데이터를 활용하여 실패 없는 장소를 선별합니다.
+*   **리스크 관리**: 평점 조작이나 특정 상권(홍대, 성수 등) 쏠림 방지를 위한 보정 로직을 가동합니다.
 
-**[https://v0.app/chat/bUdaOzJTrpx](https://v0.app/chat/bUdaOzJTrpx)**
+---
 
-## How It Works
+## 🛠️ Service Flow (Seamless User Journey)
+1.  **챗봇 호출**: 카카오톡 채팅방에서 춘식이를 호출합니다.
+2.  **데이터 활용 동의**: 이전 대화 로그 분석 및 개인정보 활용에 대한 유저 승인을 획득합니다.
+3.  **추천 알고리즘 가동**: 
+    *   **Filtering**: 이동 시간 편차 최소화
+    *   **Scoring**: 리뷰 및 별점 기반 점수화
+    *   **Correction**: 상권 쏠림 방지 및 보정
+4.  **장소 제안 및 확정**: 선정된 4곳의 후보지를 추천 이유(Logic)와 함께 공유하며, 채팅방 내에서 즉시 약속을 확정합니다.
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+---
+
+## 🏆 Differentiation
+*   **물리적 편의 vs 심리적 만족**: 경쟁 서비스(위밋플레이스)가 '어디서 만나는 것이 가장 빠른가'에 집중할 때, 춘식은 '어디서 만나는 것이 가장 만족스러운가'라는 **사용자 경험 만족**에 집중합니다.
+*   **심리적 비용 감소**: 지리적 중간인 '독립문역' 대신, 모임의 성격에 맞는 힙한 '홍대입구역'을 추천함으로써 구성원의 2차 탐색 피로도를 줄입니다.
+
+---
+
+## 💰 Business Model
+*   **Native Ad**: AI 알고리즘이 도출한 후보지 내에 파트너사 매장을 자연스럽게 노출합니다.
+*   **CPA (Cost Per Action)**: 실제 예약이나 결제로 이어지는 전환 건당 수수료를 취득합니다.
+*   **Data Insight**: 지역별/시간별 모임 트렌드 및 유동 인구 분석 리포트를 제공합니다(추후 확장).
+
+---
+
+## 🚀 Scale-Up Strategy
+*   **Phase 1 (User Experience)**: 톡캘린더 연동을 통한 일정 자동 등록 및 리마인드 알림 제공.
+*   **Phase 2 (Payment)**: 카카오페이 연동으로 예약금 결제 및 **1/N 정산 자동화**.
+*   **Phase 3 (B2B/Logistics)**: 팝업스토어, 전시회 등 장소 카테고리 다각화 및 기업용 회식 장소 추천 솔루션 출시.
+
+---
+*이 서비스는 카카오 생태계(톡, 맵, 페이)의 통합을 통해 카카오맵 신규 유입과 카카오톡 체류 시간 증대(DAU 상승)를 목표로 합니다.*
+```
