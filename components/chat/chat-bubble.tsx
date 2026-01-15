@@ -2,6 +2,30 @@
 
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { Clock, Bus, Banknote, MapPin } from "lucide-react"
+
+interface RouteStep {
+  type: "walk" | "subway" | "bus"
+  startName?: string
+  endName?: string
+  lineName?: string
+  sectionTime: number
+  stationCount?: number
+}
+
+interface MemberTravelInfo {
+  nickname: string
+  duration: number
+  distance?: number
+  transport: "transit"
+  transferCount?: number
+  walkTime?: number
+  pathType?: "subway" | "bus" | "subway+bus"
+  payment?: number
+  steps?: RouteStep[]
+  lat?: number
+  lng?: number
+}
 
 interface PlaceInfo {
   name: string
@@ -13,6 +37,9 @@ interface PlaceInfo {
   review_count?: number
   latitude?: number
   longitude?: number
+  memberTravelInfo?: MemberTravelInfo[]
+  price_range?: string
+  convenience?: string
 }
 
 interface ChatBubbleProps {
@@ -26,6 +53,7 @@ interface ChatBubbleProps {
   metadata?: {
     places?: PlaceInfo[]
   }
+  roomId?: string
 }
 
 export function ChatBubble({
@@ -36,8 +64,11 @@ export function ChatBubble({
   timestamp,
   messageType = "text",
   metadata,
+  roomId,
 }: ChatBubbleProps) {
   const router = useRouter()
+
+  console.log("[v0] ChatBubble - messageType:", messageType, "senderName:", senderName, "content:", content)
 
   const formattedTime = new Date(timestamp).toLocaleTimeString("ko-KR", {
     hour: "2-digit",
@@ -45,6 +76,8 @@ export function ChatBubble({
   })
 
   const handlePlaceClick = (place: PlaceInfo, index: number) => {
+    const memberTravelStr = place.memberTravelInfo ? encodeURIComponent(JSON.stringify(place.memberTravelInfo)) : ""
+
     const params = new URLSearchParams({
       name: place.name,
       address: place.address,
@@ -54,9 +87,28 @@ export function ChatBubble({
       ...(place.image_url && { image_url: place.image_url }),
       ...(place.review_count && { review_count: place.review_count.toString() }),
       ...(place.latitude && { lat: place.latitude.toString() }),
-      ...(place.longitude && { longitude: place.longitude.toString() }),
+      ...(place.longitude && { lng: place.longitude.toString() }),
+      ...(memberTravelStr && { memberTravel: memberTravelStr }),
+      ...(roomId && { roomId }),
     })
     router.push(`/place/${index}?${params.toString()}`)
+  }
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${minutes}분`
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return mins ? `${hours}시간 ${mins}분` : `${hours}시간`
+  }
+
+  const TransportIcon = () => <Bus className="w-3 h-3" />
+
+  if (messageType === "system") {
+    return (
+      <div className="flex justify-center my-3">
+        <div className="px-4 py-1.5 rounded-full bg-kakao-dark/10 text-kakao-dark/70 text-xs">{content}</div>
+      </div>
+    )
   }
 
   // 내 메시지 (오른쪽)
@@ -146,6 +198,13 @@ export function ChatBubble({
                         )}
                       </div>
 
+                      {place.price_range && (
+                        <div className="flex items-center gap-1 text-xs text-kakao-dark mb-1">
+                          <Banknote className="w-3 h-3" />
+                          <span className="font-medium">{place.price_range}</span>
+                        </div>
+                      )}
+
                       {/* 설명 */}
                       {place.description && (
                         <p className="text-sm text-gray-600 mb-2 line-clamp-2">{place.description}</p>
@@ -153,22 +212,50 @@ export function ChatBubble({
 
                       {/* 주소 */}
                       <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
+                        <MapPin className="w-3 h-3" />
                         <span className="truncate">{place.address}</span>
                       </div>
+
+                      {place.convenience && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {place.convenience
+                            .split(" ")
+                            .slice(0, 4)
+                            .map((item, i) => (
+                              <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                                {item.replace("#", "")}
+                              </span>
+                            ))}
+                        </div>
+                      )}
+
+                      {place.memberTravelInfo && place.memberTravelInfo.length > 0 ? (
+                        <div className="bg-kakao-gray/50 rounded-lg p-2 mb-2">
+                          <div className="flex items-center gap-1 text-xs text-kakao-dark/70 mb-1">
+                            <Clock className="w-3 h-3" />
+                            <span>대중교통 소요시간</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {place.memberTravelInfo.map((member, i) => (
+                              <div key={i} className="flex items-center gap-1 text-xs bg-white px-2 py-1 rounded-full">
+                                <span className="font-medium text-kakao-dark">{member.nickname}</span>
+                                <TransportIcon />
+                                <span className="text-kakao-dark/70">{formatDuration(member.duration)}</span>
+                                {member.transferCount !== undefined && member.transferCount > 0 && (
+                                  <span className="text-kakao-dark/50">(환승 {member.transferCount}회)</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-kakao-gray/50 rounded-lg p-2 mb-2">
+                          <div className="flex items-center gap-1 text-xs text-kakao-dark/50">
+                            <Clock className="w-3 h-3" />
+                            <span>소요시간 정보를 불러오는 중...</span>
+                          </div>
+                        </div>
+                      )}
 
                       {/* 태그 */}
                       {place.tags && (
@@ -191,7 +278,7 @@ export function ChatBubble({
                       {place.review_count && (
                         <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" />
+                            <path d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-8 0h2v2H9V9z" />
                           </svg>
                           <span>리뷰 {place.review_count.toLocaleString()}개</span>
                         </div>
@@ -205,6 +292,5 @@ export function ChatBubble({
           <span className="text-xs text-kakao-dark/60 flex-shrink-0">{formattedTime}</span>
         </div>
       </div>
-    </div>
-  )
-}
+    )
+}\

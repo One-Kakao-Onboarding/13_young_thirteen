@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Plus, MessageSquare } from "lucide-react"
+import { Plus, MessageSquare, LogOut } from "lucide-react"
 import Image from "next/image"
 
 interface Room {
@@ -16,17 +16,27 @@ interface RoomListProps {
   rooms: Room[]
   onRoomSelect: (roomId: string) => void
   onCreateRoom: () => void
+  onLogout: () => void
+  userNickname?: string
 }
 
-export function RoomList({ rooms, onRoomSelect, onCreateRoom }: RoomListProps) {
+export function RoomList({ rooms, onRoomSelect, onCreateRoom, onLogout, userNickname }: RoomListProps) {
   return (
     <div className="h-full flex flex-col bg-white">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-4 py-3 bg-kakao-yellow">
-        <h1 className="text-lg font-bold text-kakao-dark">채팅</h1>
-        <Button variant="ghost" size="icon" className="text-kakao-dark" onClick={onCreateRoom}>
-          <Plus className="w-5 h-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold text-kakao-dark">채팅</h1>
+          {userNickname && <span className="text-sm text-kakao-dark/70">({userNickname})</span>}
+        </div>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="text-kakao-dark" onClick={onLogout} title="로그아웃">
+            <LogOut className="w-5 h-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-kakao-dark" onClick={onCreateRoom}>
+            <Plus className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
 
       {/* 채팅방 목록 */}
@@ -46,7 +56,13 @@ export function RoomList({ rooms, onRoomSelect, onCreateRoom }: RoomListProps) {
             >
               {/* 채팅방 아이콘 */}
               <div className="w-12 h-12 rounded-full bg-kakao-yellow flex items-center justify-center overflow-hidden">
-                <Image src="/cute-yellow-cat-chunsik-kakao-character.jpg" alt="춘식" width={48} height={48} className="object-cover" />
+                <Image
+                  src="/cute-yellow-cat-chunsik-kakao-character.jpg"
+                  alt="춘식"
+                  width={48}
+                  height={48}
+                  className="object-cover"
+                />
               </div>
 
               {/* 채팅방 정보 */}

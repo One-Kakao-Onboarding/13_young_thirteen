@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, Send, Smile } from "lucide-react"
 
@@ -12,29 +12,58 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [message, setMessage] = useState("")
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const shouldFocusRef = useRef(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    if (!disabled && shouldFocusRef.current) {
+      inputRef.current?.focus()
+      shouldFocusRef.current = false
+    }
+  }, [disabled])
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault()
     if (message.trim() && !disabled) {
-      onSend(message.trim())
+      const msg = message.trim()
       setMessage("")
+      shouldFocusRef.current = true
+      onSend(msg)
+      // 즉시 포커스 시도
+      inputRef.current?.focus()
     }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      handleSubmit(e)
+      handleSubmit()
     }
+  }
+
+  const preventBlur = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex items-center gap-2 p-3 bg-white border-t">
-      <Button type="button" variant="ghost" size="icon" className="text-gray-500 flex-shrink-0">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="text-gray-500 flex-shrink-0"
+        onMouseDown={preventBlur}
+        onTouchStart={preventBlur}
+      >
         <Plus className="w-5 h-5" />
       </Button>
       <div className="flex-1 relative">
         <textarea
+          ref={inputRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -48,6 +77,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           variant="ghost"
           size="icon"
           className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+          onMouseDown={preventBlur}
+          onTouchStart={preventBlur}
         >
           <Smile className="w-5 h-5" />
         </Button>
@@ -57,6 +88,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         size="icon"
         className="bg-kakao-yellow hover:bg-kakao-yellow/90 text-kakao-dark flex-shrink-0"
         disabled={!message.trim() || disabled}
+        onMouseDown={preventBlur}
+        onTouchStart={preventBlur}
       >
         <Send className="w-4 h-4" />
       </Button>

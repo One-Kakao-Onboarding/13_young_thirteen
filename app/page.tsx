@@ -15,6 +15,7 @@ interface User {
   id: string
   nickname: string
   location: string
+  coordinates?: { lat: number; lng: number }
 }
 
 interface Room {
@@ -62,6 +63,7 @@ export default function ChunSikChat() {
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [copied, setCopied] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [isChunSikThinking, setIsChunSikThinking] = useState(false)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -83,6 +85,16 @@ export default function ChunSikChat() {
     }
     setIsLoading(false)
   }, [])
+
+  useEffect(() => {
+    if (user && !currentRoomId) {
+      const returnToRoom = localStorage.getItem("returnToRoom")
+      if (returnToRoom) {
+        localStorage.removeItem("returnToRoom")
+        enterRoom(returnToRoom)
+      }
+    }
+  }, [user, currentRoomId])
 
   // 사용자가 있으면 채팅방 목록 로드
   useEffect(() => {
@@ -138,7 +150,11 @@ export default function ChunSikChat() {
   }
 
   // 온보딩 완료
-  const handleOnboardingComplete = async (nickname: string, location: string) => {
+  const handleOnboardingComplete = async (
+    nickname: string,
+    location: string,
+    coordinates?: { lat: number; lng: number },
+  ) => {
     const supabase = getSupabase()
     const userId = generateUUID()
 
@@ -147,6 +163,8 @@ export default function ChunSikChat() {
       id: userId,
       nickname,
       location,
+      latitude: coordinates?.lat || null,
+      longitude: coordinates?.lng || null,
     })
 
     if (error) {
@@ -154,7 +172,7 @@ export default function ChunSikChat() {
       return
     }
 
-    const newUser = { id: userId, nickname, location }
+    const newUser = { id: userId, nickname, location, coordinates }
     storeUser(newUser)
     setUser(newUser)
   }
@@ -186,15 +204,6 @@ export default function ChunSikChat() {
       console.error("Failed to add member:", memberError)
       return
     }
-
-    // 춘식이 환영 메시지
-    await supabase.from("chat_messages").insert({
-      room_id: roomId,
-      sender_id: "chunsik",
-      sender_name: "춘식",
-      content: `안녕하세요! 저는 모임 장소를 추천해주는 춘식이에요 🐱\n\n"춘식아"로 시작하는 말로 저를 불러주시면 맛집을 추천해드릴게요!\n\n예: "춘식아 맛집 추천해줘"`,
-      message_type: "text",
-    })
 
     setShowCreateModal(false)
     await loadRooms()
@@ -285,6 +294,16 @@ export default function ChunSikChat() {
       .select("*")
       .eq("room_id", roomId)
       .order("created_at", { ascending: true })
+
+    console.log(
+      "[v0] Loaded messages:",
+      messagesData?.map((m) => ({
+        id: m.id,
+        message_type: m.message_type,
+        sender_id: m.sender_id,
+        content: m.content?.substring(0, 30),
+      })),
+    )
 
     setMessages(messagesData || [])
 
@@ -396,8 +415,8 @@ export default function ChunSikChat() {
       setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...data } : m)))
     }
 
-    // 춘식이 호출 감지 ("춘식아"로 시작)
-    if (content.includes("춘식아")) {
+    if (content.includes("춘식아") || content.includes("춘식이") || content.includes("춘식")) {
+      setIsChunSikThinking(true)
       // AI 응답 요청
       try {
         const response = await fetch("/api/chat/chunsik", {
@@ -416,6 +435,8 @@ export default function ChunSikChat() {
         }
       } catch (err) {
         console.error("AI request error:", err)
+      } finally {
+        setIsChunSikThinking(false)
       }
     }
 
@@ -428,6 +449,17 @@ export default function ChunSikChat() {
     await navigator.clipboard.writeText(currentRoomId)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleLogout = () => {
+    if (confirm("로그아웃 하시겠습니까?")) {
+      localStorage.removeItem("chunsik_user")
+      setUser(null)
+      setRooms([])
+      setCurrentRoomId(null)
+      setCurrentRoom(null)
+      setMessages([])
+    }
   }
 
   // 로딩
@@ -480,8 +512,42 @@ export default function ChunSikChat() {
               timestamp={msg.created_at}
               messageType={msg.message_type}
               metadata={msg.metadata as ChatBubbleProps["metadata"]}
+              roomId={currentRoomId}
             />
           ))}
+          {isChunSikThinking && (
+            <div className="flex items-start gap-2 mb-3">
+              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                <img
+                  src="/cute-yellow-cat-chunsik-kakao-character.jpg"
+                  alt="춘식"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <span className="text-xs text-kakao-dark/70 mb-1 block">춘식</span>
+                <div className="bg-white rounded-xl px-4 py-3 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      <span
+                        className="w-2 h-2 bg-kakao-dark/40 rounded-full animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      ></span>
+                      <span
+                        className="w-2 h-2 bg-kakao-dark/40 rounded-full animate-bounce"
+                        style={{ animationDelay: "150ms" }}
+                      ></span>
+                      <span
+                        className="w-2 h-2 bg-kakao-dark/40 rounded-full animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      ></span>
+                    </div>
+                    <span className="text-sm text-kakao-dark/70">답변을 생성하고 있어요...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -497,7 +563,13 @@ export default function ChunSikChat() {
   // 채팅방 목록
   return (
     <div className="h-screen flex flex-col">
-      <RoomList rooms={rooms} onRoomSelect={enterRoom} onCreateRoom={() => setShowCreateModal(true)} />
+      <RoomList
+        rooms={rooms}
+        onRoomSelect={enterRoom}
+        onCreateRoom={() => setShowCreateModal(true)}
+        onLogout={handleLogout}
+        userNickname={user?.nickname}
+      />
 
       {/* 하단 참여 버튼 */}
       <div className="p-4 bg-white border-t">
@@ -522,4 +594,5 @@ interface ChatBubbleProps {
       category?: string
     }>
   }
+  roomId?: string
 }
